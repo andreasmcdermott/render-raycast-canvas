@@ -1,0 +1,23 @@
+{
+  "name": "render-raycast-canvas",
+  "version": "1.0.0",
+  "description": "Wolfenstein-like raycast renderer written in JS.",
+  "main": "public/index.html",
+  "scripts": {
+    "build": "esbuild src/game.mjs src/platform.mjs --bundle --outdir=public --out-extension:.js=.mjs --format=esm --platform=neutral --define:IS_DEV=false",
+    "start": "esbuild src/game.mjs src/platform.mjs --bundle --outdir=public --out-extension:.js=.mjs --format=esm --platform=neutral --watch --servedir=public --define:IS_DEV=true"
+  },
+  "keywords": [
+    "javascript",
+    "wolfenstein",
+    "3d",
+    "canvas",
+    "game",
+    "raycast"
+  ],
+  "author": "Andreas McDermott",
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.18.1"
+  }
+}
