@@ -9,6 +9,9 @@ export class Player extends Entity {
   constructor() {
     super();
     this.angle = 0;
+    this.canvas = new OffscreenCanvas(sw, sh);
+    this.ctx = this.canvas.getContext("2d");
+    if (!this.ctx) throw new Error("Could not get 2d context");
   }
 
   activate(gameState, x, y) {
@@ -62,8 +65,9 @@ export class Player extends Entity {
     for (let i = 0; i < fov; ++i) {
       ctx.beginPath();
       ctx.moveTo(this.p.x, this.p.y);
-      let { rv } = ray(gameState, this.p, this.angle + i - fov / 2);
-      ctx.lineTo(rv.x, rv.y);
+      let { v } = ray(gameState, this.p, this.angle + i - fov / 2);
+      v.add(this.p);
+      ctx.lineTo(v.x, v.y);
       ctx.stroke();
     }
 
@@ -73,28 +77,43 @@ export class Player extends Entity {
   }
 
   draw(ctx, gameState) {
-    ctx.fillStyle = "white";
-    ctx.fillRect(
-      gameState.win.w / 2 - sw / 2,
-      gameState.win.h / 2 - sh / 2,
-      sw,
-      sh
-    );
+    this.ctx.fillStyle = "white";
+    this.ctx.fillRect(0, 0, sw, sh);
 
-    ctx.lineWidth = 480 / fov;
-    ctx.fillStyle = "red";
-    for (let i = 0; i < fov; ++i) {
-      let a = this.angle + i - fov / 2;
-      let { dist } = ray(gameState, this.p, a);
-      dist *= Math.cos(i * DEG2RAD);
-      let h = clampMax((sh * gameState.tileSize) / dist, sh);
-      ctx.fillRect(
-        gameState.win.w / 2 - sw / 2 + i * (sw / fov),
-        gameState.win.h / 2 - h / 2,
-        sw / fov,
-        h
-      );
+    for (let i = 0; i < fov * 2; ++i) {
+      let a = this.angle + i / 2 - fov / 2;
+      let { v, dir } = ray(gameState, this.p, a);
+      let dist = v.len() * Math.cos((i / 2) * DEG2RAD);
+
+      let wh = clampMax((sh * gameState.tileSize) / dist, sh);
+      let wt = sh / 2 - wh / 2;
+      let wl = i * (sw / fov / 2);
+      let ww = sw / fov / 2;
+
+      // Draw walls
+      this.ctx.fillStyle = dir === "v" ? "#999" : "#777";
+      this.ctx.fillRect(wl, wt, ww, wh);
+
+      // Draw ceiling
+      this.ctx.fillStyle = "skyblue";
+      this.ctx.fillRect(wl, 0, ww, wt);
+
+      // Draw floor
+      this.ctx.fillStyle = "darkblue";
+      this.ctx.fillRect(wl, wt + wh, sw / fov / 2, sw - wt - wh);
     }
+
+    ctx.drawImage(
+      this.canvas,
+      0,
+      0,
+      sw,
+      sh,
+      0,
+      0,
+      gameState.win.w,
+      gameState.win.h
+    );
 
     this._drawMinimap(ctx, gameState);
   }
@@ -196,9 +215,7 @@ function ray(gameState, p, deg) {
   }
 
   return {
-    rv: Vec2.fromAngle(deg)
-      .scale(new Vec2(rx - p.x, ry - p.y).len())
-      .add(p),
-    dist: new Vec2(rx - p.x, ry - p.y).len(),
+    v: Vec2.fromAngle(deg).scale(new Vec2(rx - p.x, ry - p.y).len()),
+    dir: dv < dh ? "v" : "h",
   };
 }
