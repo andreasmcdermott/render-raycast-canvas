@@ -47,7 +47,7 @@ export function init(_canvas) {
 function nextFrame(t) {
   let dt = t - lt; // dt is ~16ms
   lt = t;
-  gameLoop(dt);
+  gameLoop(dt / 1000);
   requestAnimationFrame(nextFrame);
 }
 
@@ -75,23 +75,22 @@ function initEventListeners() {
     { passive: true }
   );
 
-  // window.addEventListener(
-  //   "keydown",
-  //   (e) => {
-  //     gameState.active_input = "keyboard";
-  //     gameState.input[e.key] = true;
-  //   },
-  //   { passive: true }
-  // );
+  window.addEventListener(
+    "keydown",
+    (e) => {
+      gameState.input[e.key] = true;
+    },
+    { passive: true }
+  );
 
-  // window.addEventListener(
-  //   "keyup",
-  //   (e) => {
-  //     delete gameState.input[e.key];
-  //     if (e.key === "Backspace") gameState.debug = !gameState.debug;
-  //   },
-  //   { passive: true }
-  // );
+  window.addEventListener(
+    "keyup",
+    (e) => {
+      delete gameState.input[e.key];
+      if (e.key === "Backspace") gameState.debug = !gameState.debug;
+    },
+    { passive: true }
+  );
 
   // window.addEventListener(
   //   "mousemove",

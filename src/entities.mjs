@@ -10,6 +10,7 @@ export class Entity {
     for (let i = 0; i < keys.length; ++i) {
       let key = keys[i];
       if (!e[key] || typeof e[key] !== "object") this[key] = e[key];
+      else if (Array.isArray(e[key])) this[key] = e[key].map((e) => e.copy());
       else this[key].copyFrom(e[key]);
     }
     return this;
