@@ -45,6 +45,14 @@ export class Player extends Entity {
   }
 
   _drawMinimap(ctx, gameState) {
+    ctx.fillStyle = "black";
+    ctx.fillRect(
+      0,
+      0,
+      gameState.tileSize * gameState.mapSize + 2,
+      gameState.tileSize * gameState.mapSize + 2
+    );
+
     for (let y = 0; y < gameState.mapSize; ++y) {
       for (let x = 0; x < gameState.mapSize; ++x) {
         let tile = gameState.map[y * gameState.mapSize + x];
@@ -103,55 +111,52 @@ export class Player extends Entity {
       this.ctx.fillRect(wl, wt + wh, sw / fov / 2, sw - wt - wh);
     }
 
+    let scale = Math.min(gameState.win.w / sw, gameState.win.h / sh);
+    let tw = scale * sw;
+    let th = scale * sh;
     ctx.drawImage(
       this.canvas,
       0,
       0,
       sw,
       sh,
-      0,
-      0,
-      gameState.win.w,
-      gameState.win.h
+      (gameState.win.w - tw) / 2,
+      (gameState.win.h - th) / 2,
+      tw,
+      th
     );
 
-    this._drawMinimap(ctx, gameState);
+    if (gameState.debug) {
+      this._drawMinimap(ctx, gameState);
+    }
   }
 }
 
 function ray(gameState, p, deg) {
   let { map, mapSize: ms, tileSize: ts } = gameState;
-
   let rad = DEG2RAD * deg;
-  let tan,
-    ry,
-    rx,
-    yo,
-    xo,
-    my,
-    mx,
-    mp,
-    dof = 0,
-    max_dof = ms,
-    vx,
-    vy,
-    dh = ms * ts * 10,
-    dv = ms * ts * 10;
+  // prettier-ignore
+  let rx, ry,
+      dx, dy,
+      dof = 0, max_dof = ms,
+      vx, vy,
+      hdist = ms * ts * 10,
+      vdist = ms * ts * 10;
 
   // Vertical lines
-  tan = -Math.tan(rad);
+  let tan = -Math.tan(rad);
   if (Math.cos(rad) > 0.0001) {
     //looking right
     rx = Math.floor(p.x / ts) * ts + ts;
     ry = (p.x - rx) * tan + p.y;
-    xo = ts;
-    yo = -xo * tan;
+    dy = ts;
+    dx = -dy * tan;
   } else if (Math.cos(rad) < -0.0001) {
     // looking left
     rx = Math.floor(p.x / ts) * ts - 0.001;
     ry = (p.x - rx) * tan + p.y;
-    xo = -ts;
-    yo = -xo * tan;
+    dy = -ts;
+    dx = -dy * tan;
   } else {
     // Up or down
     rx = p.x;
@@ -160,15 +165,15 @@ function ray(gameState, p, deg) {
   }
 
   while (dof++ < max_dof) {
-    mx = Math.floor(rx / ts);
-    my = Math.floor(ry / ts);
-    mp = my * ms + mx;
+    let mx = Math.floor(rx / ts);
+    let my = Math.floor(ry / ts);
+    let mp = my * ms + mx;
     if (mp >= 0 && mp < map.length && map[mp] == 1) {
-      dv = new Vec2(rx - p.x, ry - p.y).len();
+      vdist = new Vec2(rx - p.x, ry - p.y).len();
       break;
     } else {
-      rx += xo;
-      ry += yo;
+      rx += dy;
+      ry += dx;
     }
   }
   vx = rx;
@@ -181,14 +186,14 @@ function ray(gameState, p, deg) {
     // Looking down:
     ry = Math.floor(p.y / ts) * ts + ts;
     rx = (p.y - ry) * tan + p.x;
-    yo = ts;
-    xo = -yo * tan;
+    dx = ts;
+    dy = -dx * tan;
   } else if (Math.sin(rad) < -0.0001) {
     // Looking up:
     ry = Math.floor(p.y / ts) * ts - 0.001;
     rx = (p.y - ry) * tan + p.x;
-    yo = -ts;
-    xo = -yo * tan;
+    dx = -ts;
+    dy = -dx * tan;
   } else {
     // left or right
     rx = p.x;
@@ -196,26 +201,26 @@ function ray(gameState, p, deg) {
     dof = max_dof;
   }
   while (dof++ < max_dof) {
-    mx = Math.floor(rx / ts);
-    my = Math.floor(ry / ts);
-    mp = my * ms + mx;
+    let mx = Math.floor(rx / ts);
+    let my = Math.floor(ry / ts);
+    let mp = my * ms + mx;
 
     if (mp >= 0 && mp < map.length && map[mp] === 1) {
-      dh = new Vec2(rx - p.x, ry - p.y).len();
+      hdist = new Vec2(rx - p.x, ry - p.y).len();
       break;
     } else {
-      ry += yo;
-      rx += xo;
+      ry += dx;
+      rx += dy;
     }
   }
 
-  if (dv < dh) {
+  if (vdist < hdist) {
     rx = vx;
     ry = vy;
   }
 
   return {
     v: Vec2.fromAngle(deg).scale(new Vec2(rx - p.x, ry - p.y).len()),
-    dir: dv < dh ? "v" : "h",
+    dir: vdist < hdist ? "v" : "h",
   };
 }

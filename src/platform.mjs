@@ -92,72 +92,7 @@ function initEventListeners() {
     { passive: true }
   );
 
-  // window.addEventListener(
-  //   "mousemove",
-  //   ({ movementX, movementY }) => {
-  //     if (gameState.has_mouse_lock) {
-  //       gameState.input["MouseX"] = movementX;
-  //       gameState.input["MouseY"] = movementY;
-  //       gameState.active_input = "mouse";
-  //     }
-  //   },
-  //   { passive: true }
-  // );
-
-  // window.addEventListener(
-  //   "mousedown",
-  //   (e) => {
-  //     if (gameState.has_mouse_lock) {
-  //       gameState.active_input = "mouse";
-  //       gameState.input[`Mouse${e.button}`] = true;
-  //     }
-  //   },
-  //   { passive: true }
-  // );
-
-  // window.addEventListener(
-  //   "mouseup",
-  //   (e) => {
-  //     delete gameState.input[`Mouse${e.button}`];
-  //   },
-  //   { passive: true }
-  // );
-
-  // window.addEventListener("blur", (e) => {
-  //   if (gameState.screen === "play" && !IS_DEV) gameState.screen = "pause";
-  // });
-
-  // window.addEventListener("gamepadconnected", (e) => {
-  //   let gp = navigator.getGamepads()[e.gamepad.index];
-  //   if (gp.mapping === "standard") {
-  //     gamepad = e.gamepad.index;
-  //     gameState.gamepad = gp;
-  //   } else {
-  //     gamepad = -1;
-  //     console.log("Unsupported gamepad", gp);
-  //   }
-  // });
-
-  // window.addEventListener("gamepaddisconnected", (e) => {
-  //   gameState.gamepad = null;
-  //   gamepad = -1;
-  // });
-
-  // document.addEventListener(
-  //   "pointerlockchange",
-  //   () => {
-  //     gameState.has_mouse_lock = document.pointerLockElement === canvas;
-  //   },
-  //   { passive: true }
-  // );
-
-  // canvas.addEventListener("click", async () => {
-  //   if (!document.pointerLockElement) {
-  //     await canvas.requestPointerLock({ unadjustedMovement: true });
-  //   }
-  // });
-
-  // canvas.addEventListener("contextmenu", (e) => {
-  //   e.preventDefault();
-  // });
+  canvas.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+  });
 }

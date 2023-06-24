@@ -36,7 +36,7 @@ export function gameLoop(dt, gameState) {
   let { ctx, win, tileSize } = gameState;
 
   if (!gameState.player.active) {
-    gameState.player.activate(gameState, 3.5 * tileSize, 3.5 * tileSize);
+    gameState.player.activate(gameState, 2.5 * tileSize, 4.5 * tileSize);
   }
 
   ctx.clearRect(0, 0, win.w, win.h);
