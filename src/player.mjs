@@ -1,67 +1,102 @@
 import { Entity } from "./entities.mjs";
-import { DEG2RAD, PI, PI2, Vec2, keydown, wrapDeg } from "./utils.mjs";
+import { DEG2RAD, PI2, Vec2, clampMax, keydown, wrapDeg } from "./utils.mjs";
+
+let fov = 60;
+let sw = 480;
+let sh = 320;
 
 export class Player extends Entity {
   constructor() {
     super();
     this.angle = 0;
-    this.rays = Array.from({ length: 60 }, () => new Vec2());
   }
 
   activate(gameState, x, y) {
     super.activate(gameState, x, y);
     this.angle = 0;
-    for (let i = 0; i < this.rays.lenth; ++i) {
-      this.rays[i].set(0, 0);
-    }
   }
 
   update(dt, gameState) {
-    let dx = 0,
-      dy = 0;
-    if (keydown(gameState, "ArrowLeft")) dx = -100 * dt;
-    // this.angle = wrapDeg(this.angle - 180 * dt);
-    if (keydown(gameState, "ArrowRight")) dx = 100 * dt;
-    // this.angle = wrapDeg(this.angle + 180 * dt);
+    if (keydown(gameState, "ArrowLeft"))
+      this.angle = wrapDeg(this.angle - 180 * dt);
+    if (keydown(gameState, "ArrowRight"))
+      this.angle = wrapDeg(this.angle + 180 * dt);
 
-    if (keydown(gameState, "ArrowUp")) dy = -100 * dt;
-    if (keydown(gameState, "ArrowDown")) dy = 100 * dt;
+    let v;
+    if (keydown(gameState, "ArrowUp")) {
+      v = Vec2.fromAngle(this.angle).scale(100 * dt);
+    } else if (keydown(gameState, "ArrowDown")) {
+      v = Vec2.fromAngle(this.angle).scale(-100 * dt);
+    }
 
-    let cmx = Math.floor(this.p.x / gameState.tileSize);
-    let cmy = Math.floor(this.p.y / gameState.tileSize);
-    let mx = Math.floor((this.p.x + dx) / gameState.tileSize);
-    let my = Math.floor((this.p.y + dy) / gameState.tileSize);
-    if (gameState.map[cmy * gameState.mapSize + mx]) dx = 0;
-    if (gameState.map[my * gameState.mapSize + cmx]) dy = 0;
-    this.p.x += dx;
-    this.p.y += dy;
-
-    // for (let i = 0; i < this.rays.length; ++i) {
-    //   let v = ray(
-    //     gameState,
-    //     this.p,
-    //     wrapDeg(this.angle + i - (this.rays.length >> 1))
-    //   );
-    //   this.rays[i].set(v.x, v.y);
-    // }
+    if (v) {
+      let cmx = Math.floor(this.p.x / gameState.tileSize);
+      let cmy = Math.floor(this.p.y / gameState.tileSize);
+      let mx = Math.floor((this.p.x + v.x) / gameState.tileSize);
+      let my = Math.floor((this.p.y + v.y) / gameState.tileSize);
+      if (gameState.map[cmy * gameState.mapSize + mx]) v.x = 0;
+      if (gameState.map[my * gameState.mapSize + cmx]) v.y = 0;
+      this.p.x += v.x;
+      this.p.y += v.y;
+    }
   }
 
-  draw(ctx, gameState) {
+  _drawMinimap(ctx, gameState) {
+    for (let y = 0; y < gameState.mapSize; ++y) {
+      for (let x = 0; x < gameState.mapSize; ++x) {
+        let tile = gameState.map[y * gameState.mapSize + x];
+        ctx.fillStyle = tile ? "#aaa" : "#666";
+        ctx.fillRect(
+          x * gameState.tileSize,
+          y * gameState.tileSize,
+          gameState.tileSize,
+          gameState.tileSize
+        );
+      }
+    }
+
     ctx.fillStyle = `rgba(255,255,0)`;
     ctx.strokeStyle = `rgba(100, 200, 255, 0.5)`;
     ctx.lineWidth = 1;
 
-    for (let i = 0; i < 360; ++i) {
+    for (let i = 0; i < fov; ++i) {
       ctx.beginPath();
       ctx.moveTo(this.p.x, this.p.y);
-      let p2 = ray(gameState, this.p, i);
-      ctx.lineTo(p2.x, p2.y);
+      let { rv } = ray(gameState, this.p, this.angle + i - fov / 2);
+      ctx.lineTo(rv.x, rv.y);
       ctx.stroke();
     }
 
     ctx.beginPath();
     ctx.ellipse(this.p.x, this.p.y, 5, 5, 0, 0, PI2);
     ctx.fill();
+  }
+
+  draw(ctx, gameState) {
+    ctx.fillStyle = "white";
+    ctx.fillRect(
+      gameState.win.w / 2 - sw / 2,
+      gameState.win.h / 2 - sh / 2,
+      sw,
+      sh
+    );
+
+    ctx.lineWidth = 480 / fov;
+    ctx.fillStyle = "red";
+    for (let i = 0; i < fov; ++i) {
+      let a = this.angle + i - fov / 2;
+      let { dist } = ray(gameState, this.p, a);
+      dist *= Math.cos(i * DEG2RAD);
+      let h = clampMax((sh * gameState.tileSize) / dist, sh);
+      ctx.fillRect(
+        gameState.win.w / 2 - sw / 2 + i * (sw / fov),
+        gameState.win.h / 2 - h / 2,
+        sw / fov,
+        h
+      );
+    }
+
+    this._drawMinimap(ctx, gameState);
   }
 }
 
@@ -160,7 +195,10 @@ function ray(gameState, p, deg) {
     ry = vy;
   }
 
-  return Vec2.fromAngle(deg)
-    .scale(new Vec2(rx - p.x, ry - p.y).len())
-    .add(p);
+  return {
+    rv: Vec2.fromAngle(deg)
+      .scale(new Vec2(rx - p.x, ry - p.y).len())
+      .add(p),
+    dist: new Vec2(rx - p.x, ry - p.y).len(),
+  };
 }
