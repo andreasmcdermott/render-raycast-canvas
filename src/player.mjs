@@ -17,13 +17,24 @@ export class Player extends Entity {
   }
 
   update(dt, gameState) {
-    if (keydown(gameState, "ArrowLeft")) this.p.x -= 100 * dt;
+    let dx = 0,
+      dy = 0;
+    if (keydown(gameState, "ArrowLeft")) dx = -100 * dt;
     // this.angle = wrapDeg(this.angle - 180 * dt);
-    if (keydown(gameState, "ArrowRight")) this.p.x += 100 * dt;
+    if (keydown(gameState, "ArrowRight")) dx = 100 * dt;
     // this.angle = wrapDeg(this.angle + 180 * dt);
 
-    if (keydown(gameState, "ArrowUp")) this.p.y -= 100 * dt;
-    if (keydown(gameState, "ArrowDown")) this.p.y += 100 * dt;
+    if (keydown(gameState, "ArrowUp")) dy = -100 * dt;
+    if (keydown(gameState, "ArrowDown")) dy = 100 * dt;
+
+    let cmx = Math.floor(this.p.x / gameState.tileSize);
+    let cmy = Math.floor(this.p.y / gameState.tileSize);
+    let mx = Math.floor((this.p.x + dx) / gameState.tileSize);
+    let my = Math.floor((this.p.y + dy) / gameState.tileSize);
+    if (gameState.map[cmy * gameState.mapSize + mx]) dx = 0;
+    if (gameState.map[my * gameState.mapSize + cmx]) dy = 0;
+    this.p.x += dx;
+    this.p.y += dy;
 
     // for (let i = 0; i < this.rays.length; ++i) {
     //   let v = ray(
@@ -44,7 +55,6 @@ export class Player extends Entity {
       ctx.beginPath();
       ctx.moveTo(this.p.x, this.p.y);
       let p2 = ray(gameState, this.p, i);
-      // let p2 = this.p.copy().add(this.rays[i]);
       ctx.lineTo(p2.x, p2.y);
       ctx.stroke();
     }
@@ -75,20 +85,20 @@ function ray(gameState, p, deg) {
     dv = ms * ts * 10;
 
   // Vertical lines
-  tan = Math.tan(rad);
-  if (Math.cos(rad) > 0.001) {
+  tan = -Math.tan(rad);
+  if (Math.cos(rad) > 0.0001) {
     //looking right
     rx = Math.floor(p.x / ts) * ts + ts;
     ry = (p.x - rx) * tan + p.y;
     xo = ts;
     yo = -xo * tan;
-  } else if (Math.cos(rad) < -0.001) {
+  } else if (Math.cos(rad) < -0.0001) {
     // looking left
     rx = Math.floor(p.x / ts) * ts - 0.001;
     ry = (p.x - rx) * tan + p.y;
     xo = -ts;
     yo = -xo * tan;
-  } else if (rad === PI * 0.5 || rad === PI * 1.5) {
+  } else {
     // Up or down
     rx = p.x;
     ry = p.y;
@@ -100,7 +110,7 @@ function ray(gameState, p, deg) {
     my = Math.floor(ry / ts);
     mp = my * ms + mx;
     if (mp >= 0 && mp < map.length && map[mp] == 1) {
-      dv = Math.cos(rad) * (rx - p.x) - Math.sin(rad) * (ry - p.y);
+      dv = new Vec2(rx - p.x, ry - p.y).len();
       break;
     } else {
       rx += xo;
@@ -113,13 +123,13 @@ function ray(gameState, p, deg) {
   // Horizontal lines
   dof = 0;
   tan = -1 / Math.tan(rad);
-  if (Math.sin(rad) > 0.001) {
+  if (Math.sin(rad) > 0.0001) {
     // Looking down:
     ry = Math.floor(p.y / ts) * ts + ts;
     rx = (p.y - ry) * tan + p.x;
     yo = ts;
     xo = -yo * tan;
-  } else if (Math.sin(rad) < -0.001) {
+  } else if (Math.sin(rad) < -0.0001) {
     // Looking up:
     ry = Math.floor(p.y / ts) * ts - 0.001;
     rx = (p.y - ry) * tan + p.x;
@@ -135,8 +145,9 @@ function ray(gameState, p, deg) {
     mx = Math.floor(rx / ts);
     my = Math.floor(ry / ts);
     mp = my * ms + mx;
+
     if (mp >= 0 && mp < map.length && map[mp] === 1) {
-      dh = Math.cos(rad) * (rx - p.x) - Math.sin(rad) * (ry - p.y);
+      dh = new Vec2(rx - p.x, ry - p.y).len();
       break;
     } else {
       ry += yo;
